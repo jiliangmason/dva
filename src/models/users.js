@@ -16,7 +16,7 @@ export default {
         total,
         page};
     },
-  },
+  },  //一个action：{type: 'save'}会被reducers接受
 
   effects: {
     *fetch({payload: {page=1}}, {put, call}) {
@@ -25,12 +25,45 @@ export default {
         type: 'save',
         payload: {
           data,
-          total: parseInt(headers['x-total-count'], 10), //以10为基数
-          page: parseInt(page, 10)
+          total: parseInt(headers['x-total-count'], 10), //总页数
+          page: parseInt(page, 10) //当前页
         }
       })
+    },
+
+    *remove({payload: id}, {call, put, select}) {
+      yield call(userService.remove, id);
+      yield put({
+        type: 'reload'
+      })
+    },
+
+    *patch({payload: {values, id}}, {call, put, select}) {
+      yield call(userService.patch, values, id);  //注意这里传参的先后顺序
+      yield put({
+        type: 'reload'
+      })
+    }, //编辑数据，其他文件中dispatch(type: 'users/patch', payload)就会调用这里的patch
+
+    *create({payload: {values}}, {call, put}) {
+      yield call(userService.create, values);
+      yield put({
+        type: 'reload'
+      })
+    },
+
+    *reload(action, {put, select}) {
+       const page = yield select(state=>state.users.page);
+       yield put({
+         type: 'fetch',
+         payload: {
+           page
+         }
+       })
     }
   },
+
+
 
   subscriptions: {
     setup({dispatch, history}) {
